@@ -1,9 +1,12 @@
 from django.contrib import admin
 from .models import Unternehmen, Personal, Dokument
 import csv
-from django.http import HttpResponse
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
+import zipfile
+from django.http import HttpResponse
+from django.utils.html import format_html
+import os
 
 
 class DokumentInline(admin.TabularInline):
@@ -69,15 +72,43 @@ class PersonalAdmin(admin.ModelAdmin):
 from django.urls import reverse
 from django.utils.html import format_html
 
+
+
+
+def download_as_zip(modeladmin, request, queryset):
+    zip_filename = 'Dokumente.zip'
+    response = HttpResponse(content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename={zip_filename}'
+
+    with zipfile.ZipFile(response, 'w') as zipf:
+        for doc in queryset:
+            filename = os.path.basename(doc.datei.name)
+            folder = f"{doc.personal.name}_{doc.personal.id}"
+            zipf.write(doc.datei.path, os.path.join(folder, filename))
+
+    return response
+
+
+download_as_zip.short_description = "Ausgewählte Dokumente als ZIP herunterladen"
+
+
 class DokumentAdmin(admin.ModelAdmin):
-    list_display = ('titel', 'personal', 'view_document')
+    list_display = ('file_name', 'personal', 'view_document')
     list_filter = ('personal__name',)
+    actions = [download_as_zip]  # Fügen Sie die Aktion hier hinzu
+
+    def file_name(self, obj):
+        return os.path.basename(obj.datei.name)
 
     def view_document(self, obj):
         url = obj.datei.url
         return format_html(f'<a href="{url}" target="_blank">Öffnen</a>')
 
-admin.site.register(Dokument, DokumentAdmin)
+    view_document.short_description = 'Dokument anzeigen'
+    file_name.short_description = 'Dateiname'
 
+
+
+admin.site.register(Dokument, DokumentAdmin)
 admin.site.register(Unternehmen)
 admin.site.register(Personal, PersonalAdmin)

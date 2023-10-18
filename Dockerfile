@@ -11,5 +11,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Kopieren Sie den aktuellen Ordnerinhalt in den Container unter /app
 COPY . .
 
-# Führen Sie den Befehl aus, um den Server zu starten
-CMD ["gunicorn", "mein_hrm.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Kopieren Sie das Einstiegspunkt-Skript und machen Sie es ausführbar
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh

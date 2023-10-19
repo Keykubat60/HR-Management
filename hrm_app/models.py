@@ -9,6 +9,12 @@ class Unternehmen(models.Model):
         return self.location
 
 class Personal(models.Model):
+    STATUS_CHOICES = [
+        ('', '---'),  # Standardwert, nicht ausgewählt
+        ('aktiv', 'Aktiv'),
+        ('inaktiv', 'Inaktiv'),
+    ]
+
     name = models.CharField(max_length=100)
     nachname = models.CharField(max_length=100, null=True, blank=True)
     steuernummer = models.CharField(max_length=20, null=True, blank=True)
@@ -24,7 +30,13 @@ class Personal(models.Model):
     telefonnummer = models.CharField(max_length=15, null=True, blank=True)
     ubereats_passwort = models.CharField(max_length=100, null=True, blank=True)
     standort = models.ForeignKey(Unternehmen, related_name='mitarbeiter', on_delete=models.CASCADE, null=True, blank=True)
-    status = models.CharField(max_length=50, null=True, blank=True)
+    status = models.CharField(
+        max_length=50,
+        choices=STATUS_CHOICES,
+        default='',
+        null=True,
+        blank=True
+    )
     vertragsart = models.CharField(max_length=50, null=True, blank=True)
     sign = models.CharField(max_length=100, null=True, blank=True)
     uberaccount = models.CharField(max_length=100, null=True, blank=True)

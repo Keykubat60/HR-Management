@@ -31,7 +31,13 @@ This is a simple HRM (Human Resource Management) System built with Django and th
     cd .\HR-Management\
     ```
 
-3. Start the Docker containers:
+3. Create static folder:
+
+    ```bash
+    python manage.py collectstatic --noinput 
+    ```
+
+4. Start the Docker containers:
 
     ```bash
     docker-compose up

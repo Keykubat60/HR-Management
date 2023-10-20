@@ -7,6 +7,7 @@ import zipfile
 from django.http import HttpResponse
 from django.utils.html import format_html
 import os
+from datetime import datetime, timedelta
 
 
 class DokumentInline(admin.TabularInline):
@@ -66,7 +67,7 @@ class PersonalAdmin(admin.ModelAdmin):
     )
     list_filter = ('standort__name', 'standort__location', 'finanziell_komplett')  # Fügen Sie das neue Feld zum Filter hinzu
     actions = [export_xlsx]
-    list_display = ('name', 'status', 'standort', 'finanziell_komplett_colored')
+    list_display = ('name', 'status', 'standort', 'finanziell_komplett_colored', 'vertragsende', 'probezeit_status')
 
     def finanziell_komplett_colored(self, obj):
         color = 'green' if obj.finanziell_komplett else 'red'
@@ -74,6 +75,35 @@ class PersonalAdmin(admin.ModelAdmin):
 
     finanziell_komplett_colored.admin_order_field = 'finanziell_komplett'  # Erlaubt das Sortieren
     finanziell_komplett_colored.short_description = 'Finanz'
+
+    def vertragsende(self, obj):
+        if obj.austritt:
+            delta = obj.austritt - datetime.now().date()
+            days_remaining = delta.days
+            if days_remaining <= 30:
+                color = 'red'
+            else:
+                color = 'green'
+            return format_html('<span style="color: {};">{} Tage</span>', color, days_remaining)
+        return 'Austrittsdatum nicht festgelegt'
+
+    def probezeit_status(self, obj):
+        if obj.eintritt:
+            probezeit_ende = obj.eintritt + timedelta(days=180)  # 6 Monate = 180 Tage
+            delta = probezeit_ende - datetime.now().date()
+            days_remaining = delta.days
+            if days_remaining > 0:
+                return format_html('<span style="color: green;">noch {} Tage</span>', days_remaining)
+            else:
+                return format_html('<span style="color: red;">Probezeit beendet</span>')
+        return 'Eintrittsdatum nicht festgelegt'
+
+    vertragsende.admin_order_field = 'austritt'
+    vertragsende.short_description = 'Vertragsende in'
+
+    probezeit_status.admin_order_field = 'eintritt'
+    probezeit_status.short_description = 'Probezeit'
+
 
 from django.urls import reverse
 from django.utils.html import format_html

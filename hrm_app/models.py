@@ -2,11 +2,16 @@ from django.db import models
 import os
 # Unternehmen und Standort
 class Unternehmen(models.Model):
-    name = models.CharField(max_length=100)
+    UNTERNEHMEN_CHOICES = [
+        ('Hermes', 'Hermes'),
+        ('Uber Eats', 'Uber Eats'),
+    ]
+    name = models.CharField(max_length=100, choices=UNTERNEHMEN_CHOICES,verbose_name='Projekt')
     location = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.location
+        return f"{self.name} - {self.location}"
+
 
 class Personal(models.Model):
     STATUS_CHOICES = [
@@ -30,7 +35,7 @@ class Personal(models.Model):
     transportmittel = models.CharField(max_length=50, null=True, blank=True)
     telefonnummer = models.CharField(max_length=15, null=True, blank=True)
     ubereats_passwort = models.CharField(max_length=100, null=True, blank=True)
-    standort = models.ForeignKey(Unternehmen, related_name='mitarbeiter', on_delete=models.CASCADE, null=True, blank=True)
+    standort = models.ForeignKey(Unternehmen, related_name='mitarbeiter', on_delete=models.CASCADE, null=True, blank=True,verbose_name='Projekt/Standort')
     status = models.CharField(
         max_length=50,
         choices=STATUS_CHOICES,

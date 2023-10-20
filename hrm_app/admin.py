@@ -67,7 +67,19 @@ class PersonalAdmin(admin.ModelAdmin):
     )
     list_filter = ('standort__name', 'standort__location', 'finanziell_komplett')  # Fügen Sie das neue Feld zum Filter hinzu
     actions = [export_xlsx]
-    list_display = ('name', 'status', 'standort', 'finanziell_komplett_colored', 'vertragsende', 'probezeit_status')
+    list_display = ('name', 'status', 'unternehmen_name', 'unternehmen_location', 'finanziell_komplett_colored', 'vertragsende', 'probezeit_status')
+
+    def unternehmen_name(self, obj):
+        return obj.standort.name if obj.standort else 'Nicht zugewiesen'
+
+    unternehmen_name.admin_order_field = 'standort__name'  # Erlaubt das Sortieren
+    unternehmen_name.short_description = 'Projekt'
+
+    def unternehmen_location(self, obj):
+        return obj.standort.location if obj.standort else 'Nicht zugewiesen'
+
+    unternehmen_location.admin_order_field = 'standort__location'  # Erlaubt das Sortieren
+    unternehmen_location.short_description = 'Standort'
 
     def finanziell_komplett_colored(self, obj):
         color = 'green' if obj.finanziell_komplett else 'red'

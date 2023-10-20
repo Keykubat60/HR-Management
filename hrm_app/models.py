@@ -21,6 +21,7 @@ class Personal(models.Model):
     steuerklasse = models.IntegerField(null=True, blank=True)
     iban = models.CharField(max_length=34, null=True, blank=True)
     geburtsdatum = models.DateField(null=True, blank=True)
+    finanziell_komplett = models.BooleanField(default=False, verbose_name='Finanziell komplett')
     eintritt = models.DateField(null=True, blank=True)
     austritt = models.DateField(null=True, blank=True)
     sozialversicherungsnummer = models.CharField(max_length=50, verbose_name='SV-Nummer', null=True, blank=True)

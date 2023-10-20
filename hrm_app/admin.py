@@ -56,7 +56,7 @@ class PersonalAdmin(admin.ModelAdmin):
             'fields': ('eintritt', 'austritt', 'status', 'vertragsart', 'standort')
         }),
         ('Finanzielle Informationen', {
-            'fields': ('steuernummer', 'steuerklasse', 'sozialversicherungsnummer', 'iban')
+            'fields': ('steuernummer', 'steuerklasse', 'sozialversicherungsnummer', 'iban', 'finanziell_komplett')
         }),
         ('Weitere Informationen', {
             'fields': (
@@ -64,10 +64,16 @@ class PersonalAdmin(admin.ModelAdmin):
                 'sign')
         }),
     )
-    list_filter = ('standort__name', 'standort__location',)  # Filtern nach Unternehmen und Standort
+    list_filter = ('standort__name', 'standort__location', 'finanziell_komplett')  # Fügen Sie das neue Feld zum Filter hinzu
     actions = [export_xlsx]
-    list_display = ('name', 'status', 'standort')
+    list_display = ('name', 'status', 'standort', 'finanziell_komplett_colored')
 
+    def finanziell_komplett_colored(self, obj):
+        color = 'green' if obj.finanziell_komplett else 'red'
+        return format_html('<span style="color: {};">{}</span>', color, obj.finanziell_komplett)
+
+    finanziell_komplett_colored.admin_order_field = 'finanziell_komplett'  # Erlaubt das Sortieren
+    finanziell_komplett_colored.short_description = 'Finanz'
 
 from django.urls import reverse
 from django.utils.html import format_html

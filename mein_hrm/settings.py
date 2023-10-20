@@ -40,13 +40,13 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'Ihre-Domain.de']
 # Application definition
 
 INSTALLED_APPS = [
+    'hrm_app',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'hrm_app',
 ]
 
 MIDDLEWARE = [

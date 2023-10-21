@@ -12,6 +12,7 @@ from django import forms
 from django.forms import widgets
 from django.db import models
 
+
 class DokumentInline(admin.TabularInline):
     model = Dokument
     extra = 0  # Anzahl der leeren Formulare, die standardmäßig angezeigt werden
@@ -75,10 +76,12 @@ class PersonalAdmin(admin.ModelAdmin):
             )
         }),
     )
-    list_filter = ('status', 'standort__projekt', 'standort__standort', 'finanziell_komplett')  # Aktualisierte Felder
+    list_filter = ('status', 'standort__projekt', 'standort__standort', 'finanziell_komplett',
+                   'transportmittel')  # Aktualisierte Felder
     actions = [export_xlsx]
     list_display = (
         'name', 'nachname', 'personalnummer', 'status_colored', 'unternehmen_name', 'unternehmen_location',
+        'transportmittel',
         'vertragsende', 'probezeit_status',
         'finanziell_komplett_colored', 'sign_colored')
 
@@ -88,7 +91,6 @@ class PersonalAdmin(admin.ModelAdmin):
 
     status_colored.admin_order_field = 'status'  # Erlaubt das Sortieren
     status_colored.short_description = 'Status'  # Setzt die Spaltenüberschrift
-
 
     def sign_colored(self, obj):
         if obj.sign:
@@ -159,15 +161,11 @@ class PersonalAdmin(admin.ModelAdmin):
             return format_html('<span style="color: {};">{}</span>', color, text)
         return 'Eintrittsdatum nicht festgelegt'
 
-
-
     vertragsende.admin_order_field = 'austritt'
     vertragsende.short_description = 'Vertragsende'
 
     probezeit_status.admin_order_field = 'eintritt'
     probezeit_status.short_description = 'Probezeit'
-
-
 
 
 from django.urls import reverse
@@ -215,7 +213,9 @@ class PersonalChoiceField(forms.ModelChoiceField):
 class MonatsabrechnungAdmin(admin.ModelAdmin):
     list_display = ['monat', 'jahr']
 
+
 from django.contrib.admin import SimpleListFilter
+
 
 class FullNameListFilter(SimpleListFilter):
     title = 'Personal'
@@ -230,6 +230,8 @@ class FullNameListFilter(SimpleListFilter):
             return queryset.filter(personal__id__exact=self.value())
         else:
             return queryset
+
+
 class AbrechnungAdmin(admin.ModelAdmin):
     list_display = ['monatsabrechnung', 'get_full_name', 'betrag', 'ueberwiesen', 'bar']
     change_list_template = 'admin/hrm_app/abrechnung/changelist_view.html'
@@ -240,6 +242,7 @@ class AbrechnungAdmin(admin.ModelAdmin):
 
     get_full_name.admin_order_field = 'personal__name'  # Erlaubt Sortierung
     get_full_name.short_description = 'Vollständiger Name'
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'personal':
             monatsabrechnung_id = request.GET.get('monatsabrechnung')

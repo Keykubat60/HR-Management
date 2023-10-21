@@ -59,7 +59,7 @@ class PersonalAdmin(admin.ModelAdmin):
     inlines = [DokumentInline]
     fieldsets = (
         ('Persönliche Informationen', {
-            'fields': ('name', 'nachname', 'geburtsdatum', 'telefonnummer', 'email', 'email_passwort')
+            'fields': ('name', 'nachname', 'personalnummer', 'geburtsdatum', 'telefonnummer', 'email', 'email_passwort')
         }),
         ('Arbeitsdetails', {
             'fields': ('eintritt', 'austritt', 'status', ('vertragsart', 'sign'), 'standort')
@@ -76,8 +76,9 @@ class PersonalAdmin(admin.ModelAdmin):
     list_filter = ('status', 'standort__projekt', 'standort__standort', 'finanziell_komplett')  # Aktualisierte Felder
     actions = [export_xlsx]
     list_display = (
-    'name', 'status_colored', 'unternehmen_name', 'unternehmen_location', 'vertragsende', 'probezeit_status',
-    'finanziell_komplett_colored', 'sign_colored')
+        'name', 'nachname', 'personalnummer', 'status_colored', 'unternehmen_name', 'unternehmen_location',
+        'vertragsende', 'probezeit_status',
+        'finanziell_komplett_colored', 'sign_colored')
 
     def status_colored(self, obj):
         color = 'green' if obj.status == 'aktiv' else 'red'
@@ -85,6 +86,7 @@ class PersonalAdmin(admin.ModelAdmin):
 
     status_colored.admin_order_field = 'status'  # Erlaubt das Sortieren
     status_colored.short_description = 'Status'  # Setzt die Spaltenüberschrift
+
 
     def sign_colored(self, obj):
         if obj.sign:

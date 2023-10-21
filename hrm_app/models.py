@@ -33,6 +33,7 @@ class Personal(models.Model):
         ('Auto', 'Auto'),
         ('Fahrrad', 'Fahrrad'),
     ]
+    personalnummer = models.CharField(max_length=20, unique=True, null=True, blank=True)
     name = models.CharField(max_length=100)
     nachname = models.CharField(max_length=100, null=True, blank=True)
     steuernummer = models.CharField(max_length=20, null=True, blank=True)

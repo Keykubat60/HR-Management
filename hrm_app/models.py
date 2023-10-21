@@ -1,5 +1,7 @@
 from django.db import models
 import os
+
+
 # Unternehmen und Standort
 class Unternehmen(models.Model):
     UNTERNEHMEN_CHOICES = [
@@ -27,10 +29,10 @@ class Personal(models.Model):
         ('Vollzeit', 'Vollzeit'),
     ]
     TRANSPORTMITTEL_CHOICES = [
-    ('', '---'),  # Standardwert, nicht ausgewählt
-    ('Auto', 'Auto'),
-    ('Fahrrad', 'Fahrrad'),
-]
+        ('', '---'),  # Standardwert, nicht ausgewählt
+        ('Auto', 'Auto'),
+        ('Fahrrad', 'Fahrrad'),
+    ]
     name = models.CharField(max_length=100)
     nachname = models.CharField(max_length=100, null=True, blank=True)
     steuernummer = models.CharField(max_length=20, null=True, blank=True)
@@ -51,7 +53,8 @@ class Personal(models.Model):
     )
     telefonnummer = models.CharField(max_length=15, null=True, blank=True)
     ubereats_passwort = models.CharField(max_length=100, null=True, blank=True)
-    standort = models.ForeignKey(Unternehmen, related_name='mitarbeiter', on_delete=models.CASCADE, null=True, blank=True,verbose_name='Projekt/Standort')
+    standort = models.ForeignKey(Unternehmen, related_name='mitarbeiter', on_delete=models.SET_NULL, null=True,
+                                 blank=True, verbose_name='Projekt/Standort')
     status = models.CharField(
         max_length=50,
         choices=STATUS_CHOICES,
@@ -71,15 +74,17 @@ class Personal(models.Model):
 
     def __str__(self):
         return self.name
+
+
 # Dokumente
 def get_upload_to(instance, filename):
     return os.path.join('dokumente', f"{instance.personal.name}_{instance.personal.id}", filename)
+
 
 class Dokument(models.Model):
     titel = models.CharField(max_length=100)
     datei = models.FileField(upload_to=get_upload_to)
     personal = models.ForeignKey(Personal, related_name='dokumente', on_delete=models.CASCADE)
-
 
     def save(self, *args, **kwargs):
         if self.datei:
@@ -97,6 +102,3 @@ class Dokument(models.Model):
 
     def __str__(self):
         return self.titel
-
-
-

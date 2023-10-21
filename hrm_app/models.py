@@ -6,11 +6,11 @@ class Unternehmen(models.Model):
         ('Hermes', 'Hermes'),
         ('Uber Eats', 'Uber Eats'),
     ]
-    name = models.CharField(max_length=100, choices=UNTERNEHMEN_CHOICES,verbose_name='Projekt')
-    location = models.CharField(max_length=100)
+    projekt = models.CharField(max_length=100, choices=UNTERNEHMEN_CHOICES)
+    standort = models.CharField(max_length=100)
 
     def __str__(self):
-        return f"{self.name} - {self.location}"
+        return f"{self.projekt} - {self.standort}"
 
 
 class Personal(models.Model):
@@ -19,7 +19,18 @@ class Personal(models.Model):
         ('aktiv', 'Aktiv'),
         ('inaktiv', 'Inaktiv'),
     ]
-
+    VERTRAGSART_CHOICES = [
+        ('', '---'),  # Standardwert, nicht ausgewählt
+        ('150€', '150€'),
+        ('520€', '520€'),
+        ('Teilzeit', 'Teilzeit'),
+        ('Vollzeit', 'Vollzeit'),
+    ]
+    TRANSPORTMITTEL_CHOICES = [
+    ('', '---'),  # Standardwert, nicht ausgewählt
+    ('Auto', 'Auto'),
+    ('Fahrrad', 'Fahrrad'),
+]
     name = models.CharField(max_length=100)
     nachname = models.CharField(max_length=100, null=True, blank=True)
     steuernummer = models.CharField(max_length=20, null=True, blank=True)
@@ -32,7 +43,12 @@ class Personal(models.Model):
     sozialversicherungsnummer = models.CharField(max_length=50, verbose_name='SV-Nummer', null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     email_passwort = models.CharField(max_length=100, null=True, blank=True)
-    transportmittel = models.CharField(max_length=50, null=True, blank=True)
+    transportmittel = models.CharField(
+        max_length=50,
+        choices=TRANSPORTMITTEL_CHOICES,
+        null=True,
+        blank=True
+    )
     telefonnummer = models.CharField(max_length=15, null=True, blank=True)
     ubereats_passwort = models.CharField(max_length=100, null=True, blank=True)
     standort = models.ForeignKey(Unternehmen, related_name='mitarbeiter', on_delete=models.CASCADE, null=True, blank=True,verbose_name='Projekt/Standort')
@@ -43,8 +59,14 @@ class Personal(models.Model):
         null=True,
         blank=True
     )
-    vertragsart = models.CharField(max_length=50, null=True, blank=True)
-    sign = models.CharField(max_length=100, null=True, blank=True)
+    vertragsart = models.CharField(
+        max_length=50,
+        choices=VERTRAGSART_CHOICES,
+        default='',
+        null=True,
+        blank=True
+    )
+    sign = models.BooleanField(default=False)
     uberaccount = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):

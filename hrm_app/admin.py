@@ -73,10 +73,11 @@ class PersonalAdmin(admin.ModelAdmin):
             )
         }),
     )
-    list_filter = ('standort__projekt', 'standort__standort', 'finanziell_komplett')  # Aktualisierte Felder
+    list_filter = ('status', 'standort__projekt', 'standort__standort', 'finanziell_komplett')  # Aktualisierte Felder
     actions = [export_xlsx]
-    list_display = ('name', 'status_colored', 'unternehmen_name', 'unternehmen_location', 'vertragsende', 'probezeit_status',
-                    'finanziell_komplett_colored', 'sign_colored')
+    list_display = (
+    'name', 'status_colored', 'unternehmen_name', 'unternehmen_location', 'vertragsende', 'probezeit_status',
+    'finanziell_komplett_colored', 'sign_colored')
 
     def status_colored(self, obj):
         color = 'green' if obj.status == 'aktiv' else 'red'
@@ -84,6 +85,7 @@ class PersonalAdmin(admin.ModelAdmin):
 
     status_colored.admin_order_field = 'status'  # Erlaubt das Sortieren
     status_colored.short_description = 'Status'  # Setzt die Spaltenüberschrift
+
     def sign_colored(self, obj):
         if obj.sign:
             color = 'green'
@@ -124,11 +126,16 @@ class PersonalAdmin(admin.ModelAdmin):
         if obj.austritt:
             delta = obj.austritt - datetime.now().date()
             days_remaining = delta.days
-            if days_remaining <= 30:
+            if days_remaining <= 0:
                 color = 'red'
+                text = f'abgelaufen seit {days_remaining} Tage'
+            elif days_remaining <= 30:
+                color = 'orange'
+                text = f'in {days_remaining} Tage'
             else:
                 color = 'green'
-            return format_html('<span style="color: {};">{} Tage</span>', color, days_remaining)
+                text = f'in {days_remaining} Tage'
+            return format_html('<span style="color: {};">{}</span>', color, text)
         return 'Austrittsdatum nicht festgelegt'
 
     def probezeit_status(self, obj):
@@ -136,14 +143,20 @@ class PersonalAdmin(admin.ModelAdmin):
             probezeit_ende = obj.eintritt + timedelta(days=180)  # 6 Monate = 180 Tage
             delta = probezeit_ende - datetime.now().date()
             days_remaining = delta.days
-            if days_remaining > 0:
-                return format_html('<span style="color: green;">noch {} Tage</span>', days_remaining)
+            if days_remaining <= 0:
+                color = 'white'
+                text = 'beendet'
+            elif days_remaining <= 30:
+                color = 'orange'
+                text = f'noch {days_remaining} Tage'
             else:
-                return format_html('<span style="color: red;">Probezeit beendet</span>')
+                color = 'green'
+                text = f'noch {days_remaining}'
+            return format_html('<span style="color: {};">{}</span>', color, text)
         return 'Eintrittsdatum nicht festgelegt'
 
     vertragsende.admin_order_field = 'austritt'
-    vertragsende.short_description = 'Vertragsende in'
+    vertragsende.short_description = 'Vertragsende'
 
     probezeit_status.admin_order_field = 'eintritt'
     probezeit_status.short_description = 'Probezeit'

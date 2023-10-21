@@ -10,7 +10,7 @@ import os
 from datetime import datetime, timedelta
 from django import forms
 from django.forms import widgets
-
+from django.db import models
 
 class DokumentInline(admin.TabularInline):
     model = Dokument
@@ -215,10 +215,31 @@ class PersonalChoiceField(forms.ModelChoiceField):
 class MonatsabrechnungAdmin(admin.ModelAdmin):
     list_display = ['monat', 'jahr']
 
+from django.contrib.admin import SimpleListFilter
 
+class FullNameListFilter(SimpleListFilter):
+    title = 'Personal'
+    parameter_name = 'personal'
+
+    def lookups(self, request, model_admin):
+        persons = set([c.personal for c in model_admin.model.objects.all()])
+        return [(p.id, f"{p.name} {p.nachname}") for p in persons]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(personal__id__exact=self.value())
+        else:
+            return queryset
 class AbrechnungAdmin(admin.ModelAdmin):
-    list_display = ['monatsabrechnung', 'personal', 'betrag', 'ueberwiesen', 'bar']
+    list_display = ['monatsabrechnung', 'get_full_name', 'betrag', 'ueberwiesen', 'bar']
+    change_list_template = 'admin/hrm_app/abrechnung/changelist_view.html'
+    list_filter = ('monatsabrechnung__jahr', 'monatsabrechnung__monat', FullNameListFilter,)
 
+    def get_full_name(self, obj):
+        return f"{obj.personal.name} {obj.personal.nachname}"
+
+    get_full_name.admin_order_field = 'personal__name'  # Erlaubt Sortierung
+    get_full_name.short_description = 'Vollständiger Name'
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'personal':
             monatsabrechnung_id = request.GET.get('monatsabrechnung')
@@ -274,6 +295,24 @@ class AbrechnungAdmin(admin.ModelAdmin):
                     '''
             }
         )
+        form.base_fields['betrag'].widget.attrs.update({
+            'oninput': '''
+                   var betrag = parseFloat(document.getElementById("id_betrag").value) || 0;
+                   var ueberwiesen = parseFloat(document.getElementById("id_ueberwiesen").value) || 0;
+                   var bar = parseFloat(document.getElementById("id_bar").value) || 0;
+                   if (betrag === (ueberwiesen + bar)) {
+                       document.getElementById("id_betrag").style.backgroundColor = "green";
+                   } else {
+                       document.getElementById("id_betrag").style.backgroundColor = "red";
+                   }
+               '''
+        })
+        form.base_fields['ueberwiesen'].widget.attrs.update({
+            'oninput': 'document.getElementById("id_betrag").dispatchEvent(new Event("input"))'
+        })
+        form.base_fields['bar'].widget.attrs.update({
+            'oninput': 'document.getElementById("id_betrag").dispatchEvent(new Event("input"))'
+        })
         return form
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
@@ -282,6 +321,31 @@ class AbrechnungAdmin(admin.ModelAdmin):
         return super(AbrechnungAdmin, self).change_view(
             request, object_id, form_url, extra_context=extra_context,
         )
+
+    def changelist_view(self, request, extra_context=None):
+        # Grundlegende Ansicht
+        response = super().changelist_view(request, extra_context)
+
+        # Nur die Summe hinzufügen, wenn wir uns in der Ansicht 'changelist' befinden
+        if hasattr(response, 'context_data') and 'cl' in response.context_data:
+            queryset = response.context_data['cl'].queryset
+            # Summe der Beträge
+            total_betrag = queryset.aggregate(total=models.Sum('betrag'))['total'] or 0
+            total_ueberwiesen = queryset.aggregate(total=models.Sum('ueberwiesen'))['total'] or 0
+            total_bar = queryset.aggregate(total=models.Sum('bar'))['total'] or 0
+
+            # Zusätzliche Kontextdaten hinzufügen
+            if extra_context is None:
+                extra_context = {}
+            extra_context['total_betrag'] = total_betrag
+            extra_context['total_ueberwiesen'] = total_ueberwiesen
+            extra_context['total_bar'] = total_bar
+            extra_context['show_color_coding'] = True  # Neue Kontextvariable
+
+            response.context_data.update(extra_context)
+
+        return response
+
 
 admin.site.register(Monatsabrechnung, MonatsabrechnungAdmin)
 

@@ -1,0 +1,37 @@
+{% extends "admin/change_list.html" %}
+
+{% block content %}
+    {{ block.super }}
+    <div>
+        <h2>Summen:</h2>
+        <p>Total Betrag: {{ total_betrag }} Euro</p>
+        <p>Total Überwiesen: {{ total_ueberwiesen }} Euro</p>
+        <p>Total Bar: {{ total_bar }} Euro</p>
+    </div>
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function() {
+            var rows = document.querySelectorAll("tbody tr");
+            rows.forEach(function(row) {
+                var betragCell = row.querySelector(".field-betrag");
+                var ueberwiesenCell = row.querySelector(".field-ueberwiesen");
+                var barCell = row.querySelector(".field-bar");
+
+                if (betragCell && ueberwiesenCell && barCell) {
+                    var betrag = parseFloat(betragCell.textContent) || 0;
+                    var ueberwiesen = parseFloat(ueberwiesenCell.textContent) || 0;
+                    var bar = parseFloat(barCell.textContent) || 0;
+
+                    if (betrag === (ueberwiesen + bar)) {
+                        betragCell.style.color = "green";
+                    } else {
+                        betragCell.style.color = "red";
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %}

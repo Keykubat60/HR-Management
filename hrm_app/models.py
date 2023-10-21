@@ -137,11 +137,12 @@ class Monatsabrechnung(models.Model):
 class Abrechnung(models.Model):
     monatsabrechnung = models.ForeignKey(Monatsabrechnung, on_delete=models.CASCADE)
     personal = models.ForeignKey(Personal, on_delete=models.CASCADE)
-    betrag = models.IntegerField()
-    ueberwiesen = models.IntegerField()
-    bar = models.IntegerField()
+    betrag = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    ueberwiesen = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    bar = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         unique_together = ('monatsabrechnung', 'personal',)
+
     def __str__(self):
         return f"Abrechnung für {self.personal.name} für {self.monatsabrechnung}"

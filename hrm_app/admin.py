@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Unternehmen, Personal, Dokument
+from .models import Unternehmen, Personal, Dokument, Abrechnung, Monatsabrechnung
 import csv
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
@@ -8,6 +8,8 @@ from django.http import HttpResponse
 from django.utils.html import format_html
 import os
 from datetime import datetime, timedelta
+from django import forms
+from django.forms import widgets
 
 
 class DokumentInline(admin.TabularInline):
@@ -157,14 +159,15 @@ class PersonalAdmin(admin.ModelAdmin):
             return format_html('<span style="color: {};">{}</span>', color, text)
         return 'Eintrittsdatum nicht festgelegt'
 
+
+
     vertragsende.admin_order_field = 'austritt'
     vertragsende.short_description = 'Vertragsende'
 
     probezeit_status.admin_order_field = 'eintritt'
     probezeit_status.short_description = 'Probezeit'
 
-    class Media:
-        js = ('js/admin.js',)
+
 
 
 from django.urls import reverse
@@ -204,6 +207,85 @@ class DokumentAdmin(admin.ModelAdmin):
     file_name.short_description = 'Dateiname'
 
 
+class PersonalChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return f"{obj.name} {obj.nachname} {obj.personalnummer}"
+
+
+class MonatsabrechnungAdmin(admin.ModelAdmin):
+    list_display = ['monat', 'jahr']
+
+
+class AbrechnungAdmin(admin.ModelAdmin):
+    list_display = ['monatsabrechnung', 'personal', 'betrag', 'ueberwiesen', 'bar']
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'personal':
+            monatsabrechnung_id = request.GET.get('monatsabrechnung')
+            if monatsabrechnung_id:
+                already_added = Abrechnung.objects.filter(monatsabrechnung_id=monatsabrechnung_id).values_list(
+                    'personal', flat=True)
+                kwargs['queryset'] = Personal.objects.exclude(id__in=already_added).filter(is_active=True)
+            return PersonalChoiceField(queryset=kwargs.get('queryset', Personal.objects.all()))
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(AbrechnungAdmin, self).get_form(request, obj, **kwargs)
+        form.base_fields['personal'].widget = widgets.Select(
+            attrs={
+                'onchange': '''
+                    var iban = document.getElementById("id_iban");
+                    var vertragsart = document.getElementById("id_vertragsart");
+                    var selectedValue = this.options[this.selectedIndex].value;
+                    if (selectedValue) {
+                        fetch(`/api/get_personal_details/${selectedValue}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            iban.innerHTML = "IBAN: " + data.iban;
+                            vertragsart.innerHTML = "Vertragsart: " + data.vertragsart;
+                        });
+                    } else {
+                        iban.innerHTML = "";
+                        vertragsart.innerHTML = "";
+                    }
+                '''
+            }
+        )
+        form.base_fields['monatsabrechnung'].widget = widgets.Select(
+            attrs={
+                'onchange': '''
+                        var personsDiv = document.getElementById("id_persons_not_in_month");
+                        var selectedValue = this.options[this.selectedIndex].value;
+                        if (selectedValue) {
+                            fetch(`/api/get_persons_not_in_month/${selectedValue}/`)
+                            .then(response => response.json())
+                            .then(data => {
+                                var listHtml = "<ul>";
+                                for (var i = 0; i < data.persons.length; i++) {
+                                    var person = data.persons[i];
+                                    listHtml += "<li>" + person.name + " " + person.nachname + " (" + person.personalnummer + ")</li>";
+                                }
+                                listHtml += "</ul>";
+                                personsDiv.innerHTML = "Personen ohne Abrechnung für diesen Monat: " + listHtml;
+                            });
+                        } else {
+                            personsDiv.innerHTML = "";
+                        }
+                    '''
+            }
+        )
+        return form
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['show_additional_fields'] = True
+        return super(AbrechnungAdmin, self).change_view(
+            request, object_id, form_url, extra_context=extra_context,
+        )
+
+admin.site.register(Monatsabrechnung, MonatsabrechnungAdmin)
+
+admin.site.register(Abrechnung, AbrechnungAdmin)
 admin.site.register(Dokument, DokumentAdmin)
 admin.site.register(Unternehmen)
 admin.site.register(Personal, PersonalAdmin)

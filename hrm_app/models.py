@@ -1,5 +1,6 @@
 from django.db import models
 import os
+from django.db.models import UniqueConstraint
 
 
 # Unternehmen und Standort
@@ -103,3 +104,44 @@ class Dokument(models.Model):
 
     def __str__(self):
         return self.titel
+
+
+class Monatsabrechnung(models.Model):
+    MONAT_CHOICES = [
+        ('Januar', 'Januar'),
+        ('Februar', 'Februar'),
+        ('März', 'März'),
+        ('April', 'April'),
+        ('Mai', 'Mai'),
+        ('Juni', 'Juni'),
+        ('Juli', 'Juli'),
+        ('August', 'August'),
+        ('September', 'September'),
+        ('Oktober', 'Oktober'),
+        ('November', 'November'),
+        ('Dezember', 'Dezember'),
+    ]
+
+    monat = models.CharField(max_length=20, choices=MONAT_CHOICES)
+    jahr = models.CharField(max_length=4)
+    personal = models.ManyToManyField(
+        Personal,
+        through='Abrechnung',
+        through_fields=('monatsabrechnung', 'personal'),
+    )
+
+    def __str__(self):
+        return f"{self.monat} {self.jahr}"
+
+
+class Abrechnung(models.Model):
+    monatsabrechnung = models.ForeignKey(Monatsabrechnung, on_delete=models.CASCADE)
+    personal = models.ForeignKey(Personal, on_delete=models.CASCADE)
+    betrag = models.IntegerField()
+    ueberwiesen = models.IntegerField()
+    bar = models.IntegerField()
+
+    class Meta:
+        unique_together = ('monatsabrechnung', 'personal',)
+    def __str__(self):
+        return f"Abrechnung für {self.personal.name} für {self.monatsabrechnung}"

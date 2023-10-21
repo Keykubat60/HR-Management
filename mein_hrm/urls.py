@@ -15,18 +15,25 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from django.conf import settings
-from django.conf.urls.static import static
-from . import views  # Stellen Sie sicher, dass Ihre views importiert sind
+from django.urls import path, include
+from django.conf import settings  # <--- Hinzufügen
+from django.conf.urls.static import static  # <--- Hinzufügen
+import hrm_app.views  # Stellen Sie sicher, dass Ihre views importiert sind
+from rest_framework.routers import DefaultRouter
+
+
+router = DefaultRouter()
+router.register(r'personal', hrm_app.views.PersonalViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.redirect_to_admin),  # Benutzerdefinierte Weiterleitung
+    path('', hrm_app.views.redirect_to_admin),  # Weiterleitung von der Hauptseite zur Admin-Seite
+    path('api/get_personal_details/<int:personal_id>/', hrm_app.views.get_personal_details, name='get_personal_details'),
+    path('api/', include(router.urls)),
+    path('api/get_persons_not_in_month/<int:month_id>/', hrm_app.views.get_persons_not_in_month,
+         name='get_persons_not_in_month'),
 
 ]
 
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+if settings.DEBUG is False:  # Wenn DEBUG ist False, dienen Sie statische Dateien durch Django
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

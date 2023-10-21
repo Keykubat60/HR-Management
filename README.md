@@ -30,40 +30,38 @@ This is a simple HRM (Human Resource Management) System built with Django and th
     ```bash
     cd .\HR-Management\
     ```
-2. Navigate into the directory:
+   
+3. deploy Projekt:
+
+    ```bash
+    docker-compose up -d       
+    ``` 
+   
+4. Navigate into the directory:
 
     ```bash
     docker compose run --rm web python manage.py makemigrations
     ```
    
-2. migrate DB:
+5. migrate DB:
 
     ```bash
     docker compose run --rm web python manage.py migrate
     ```
   
-2. create user:
+6. create user:
 
     ```bash
     docker compose run --rm web python manage.py createsuperuser
     ``` 
 
-2. deploy Projekt:
+
+
+7. create static files:
 
     ```bash
-    docker-compose up -d       
-    ``` 
-
-3. create static files:
-
-    ```bash
-    docker compose run --rm web manage.py collectstatic --noinput 
+    docker-compose run --rm web python manage.py collectstatic --noinput
     ```
 
-4. Start the Docker containers:
-
-    ```bash
-    docker-compose up
-    ```
 
 Now the application should be running, and you can access it in your browser at `http://127.0.0.1:8000/`.

@@ -149,8 +149,8 @@ class PersonalAdmin(admin.ModelAdmin):
             probezeit_ende = obj.eintritt + timedelta(days=180)  # 6 Monate = 180 Tage
             delta = probezeit_ende - datetime.now().date()
             days_remaining = delta.days
+            color = ""
             if days_remaining <= 0:
-                color = 'white'
                 text = 'beendet'
             elif days_remaining <= 30:
                 color = 'orange'
@@ -304,9 +304,9 @@ class AbrechnungAdmin(admin.ModelAdmin):
                    var ueberwiesen = parseFloat(document.getElementById("id_ueberwiesen").value) || 0;
                    var bar = parseFloat(document.getElementById("id_bar").value) || 0;
                    if (betrag === (ueberwiesen + bar)) {
-                       document.getElementById("id_betrag").style.backgroundColor = "green";
+                       document.getElementById("id_betrag").style.color = "green";
                    } else {
-                       document.getElementById("id_betrag").style.backgroundColor = "red";
+                       document.getElementById("id_betrag").style.color = "red";
                    }
                '''
         })

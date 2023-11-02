@@ -15,7 +15,9 @@ class Unternehmen(models.Model):
 
     def __str__(self):
         return f"{self.projekt} - {self.standort}"
-
+    class Meta:
+        verbose_name = "Projekt"
+        verbose_name_plural = "Projekte"
 
 class Personal(models.Model):
     STATUS_CHOICES = [
@@ -98,7 +100,9 @@ class Personal(models.Model):
 
     def __str__(self):
         return self.name
-
+    class Meta:
+        verbose_name = "Mitarbeiter"
+        verbose_name_plural = "Mitarbeiter"
 
 # Dokumente
 def get_upload_to(instance, filename):
@@ -126,7 +130,9 @@ class Dokument(models.Model):
 
     def __str__(self):
         return self.titel
-
+    class Meta:
+        verbose_name = "Dokument"
+        verbose_name_plural = "Dokumente"
 class Kind(models.Model):
     personal = models.ForeignKey(Personal, related_name='kinder', on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
@@ -134,6 +140,9 @@ class Kind(models.Model):
 
     def __str__(self):
         return f"{self.name}"
+    class Meta:
+        verbose_name = "Kinder von Mitarbeiter"
+        verbose_name_plural = "Kinder von Mitarbeiter"
 class Monatsabrechnung(models.Model):
     MONAT_CHOICES = [
         ('Januar', 'Januar'),
@@ -160,7 +169,9 @@ class Monatsabrechnung(models.Model):
 
     def __str__(self):
         return f"{self.monat} {self.jahr}"
-
+    class Meta:
+        verbose_name = "Abrechnungsmonat"
+        verbose_name_plural = "Abrechnungsmonate"
 
 class Abrechnung(models.Model):
     monatsabrechnung = models.ForeignKey(Monatsabrechnung, on_delete=models.CASCADE)
@@ -171,7 +182,8 @@ class Abrechnung(models.Model):
 
     class Meta:
         unique_together = ('monatsabrechnung', 'personal',)
-
+        verbose_name = "Abrechnung"
+        verbose_name_plural = "Abrechnungen"
     def __str__(self):
         return f"Abrechnung für {self.personal.name} für {self.monatsabrechnung}"
 
@@ -190,5 +202,6 @@ class Lohnprogramm(models.Model):
     class Meta:
         # Optional: Definieren Sie eine Regel, dass nur der neueste Status als aktuell betrachtet wird
         get_latest_by = 'datum'
-
+        verbose_name = "Lohnprogrammstatus"
+        verbose_name_plural = "Lohnprogrammstatus"
 

@@ -13,6 +13,8 @@ from django.forms import widgets
 from django.db import models
 from .forms import KindForm
 from .forms import KindFormSet
+from django.contrib.admin import RelatedOnlyFieldListFilter
+from django.utils.timezone import now
 
 
 class DokumentInline(admin.TabularInline):
@@ -75,9 +77,12 @@ class KindInline(admin.TabularInline):
 
 class PersonalAdmin(admin.ModelAdmin):
     inlines = [AnmeldeStatusInline, KindInline, DokumentInline]
+
+
     fieldsets = (
         ('Persönliche Informationen', {
-            'fields': ('name', 'nachname', 'personalnummer', 'familienstand', 'staatsbuergerschaft', 'geburtsdatum', 'telefonnummer', 'email',
+            'fields': ('name', 'nachname', 'personalnummer', 'familienstand', 'staatsbuergerschaft', 'geburtsdatum',
+                       'telefonnummer', 'email',
                        'email_passwort')
         }),
         ('Adresse', {
@@ -98,14 +103,35 @@ class PersonalAdmin(admin.ModelAdmin):
             )
         }),
     )
-    list_filter = ('status', 'standort__projekt', 'standort__standort', 'finanziell_komplett',
-                   'transportmittel')  # Aktualisierte Felder
+    list_filter = ('gekuendigt', 'status', 'standort__projekt', 'standort__standort', 'finanziell_komplett', 'transportmittel')
+
     actions = [export_xlsx]
     list_display = (
-        'name', 'nachname', 'personalnummer', 'status_colored', 'unternehmen_name', 'unternehmen_location',
+        'name_colored', 'nachname', 'personalnummer', 'status_colored', 'unternehmen_name', 'unternehmen_location',
         'transportmittel',
         'vertragsende', 'probezeit_status',
-        'finanziell_komplett_colored', 'sign_colored')
+        'finanziell_komplett_colored', 'sign_colored', 'letzter_anmeldestatus')
+
+    def name_colored(self, obj):
+        # Wenn das Objekt gekündigt ist, färben Sie den Namen rot
+        if obj.gekuendigt:
+            return format_html('<span style="color: red;">{}</span>', obj.name)
+        return obj.name
+    name_colored.short_description = 'Name'  # Setzt die Spaltenüberschrift
+    name_colored.admin_order_field = 'name'  # Erlaubt das Sortieren nach diesem Feld
+
+    def letzter_anmeldestatus(self, obj):
+        # Holen Sie den letzten Anmeldestatus für das Personal
+        letzter_status = obj.anmeldestatus.last()
+        if letzter_status:
+            return format_html(
+                '<span style="color: {};">{}</span>',
+                'green' if letzter_status.status == 'angemeldet' else 'red',
+                letzter_status.get_status_display()
+            )
+        return 'Kein Status'
+
+    letzter_anmeldestatus.short_description = 'Letzter Anmeldestatus'  # Setzt die Spaltenüberschrift
 
     def status_colored(self, obj):
         color = 'green' if obj.status == 'aktiv' else 'red'
@@ -152,34 +178,36 @@ class PersonalAdmin(admin.ModelAdmin):
 
     def vertragsende(self, obj):
         if obj.austritt:
-            delta = obj.austritt - datetime.now().date()
+            delta = obj.austritt - now().date()
             days_remaining = delta.days
-            if days_remaining <= 0:
+            date_str = obj.austritt.strftime('%d.%m.%Y')  # Formatieren Sie das Datum als String
+            if days_remaining < 0:
                 color = 'red'
-                text = f'abgelaufen seit {days_remaining} Tage'
+                text = f'{date_str} (abgelaufen)'
             elif days_remaining <= 30:
                 color = 'orange'
-                text = f'in {days_remaining} Tage'
+                text = f'{date_str} (bald ablaufend)'
             else:
                 color = 'green'
-                text = f'in {days_remaining} Tage'
+                text = date_str
             return format_html('<span style="color: {};">{}</span>', color, text)
         return 'Austrittsdatum nicht festgelegt'
 
     def probezeit_status(self, obj):
         if obj.eintritt:
             probezeit_ende = obj.eintritt + timedelta(days=180)  # 6 Monate = 180 Tage
-            delta = probezeit_ende - datetime.now().date()
+            delta = probezeit_ende - now().date()
             days_remaining = delta.days
+            date_str = probezeit_ende.strftime('%d.%m.%Y')  # Formatieren Sie das Datum als String
             color = ""
-            if days_remaining <= 0:
-                text = 'beendet'
+            if days_remaining < 0:
+                text = f'{date_str} (beendet)'
             elif days_remaining <= 30:
                 color = 'orange'
-                text = f'noch {days_remaining} Tage'
+                text = f'{date_str} (endet bald)'
             else:
                 color = 'green'
-                text = f'noch {days_remaining}'
+                text = date_str
             return format_html('<span style="color: {};">{}</span>', color, text)
         return 'Eintrittsdatum nicht festgelegt'
 
@@ -257,7 +285,9 @@ class FullNameListFilter(SimpleListFilter):
 class AbrechnungAdmin(admin.ModelAdmin):
     list_display = ['monatsabrechnung', 'get_full_name', 'betrag', 'ueberwiesen', 'bar']
     change_list_template = 'admin/hrm_app/abrechnung/changelist_view.html'
-    list_filter = ('monatsabrechnung__jahr', 'monatsabrechnung__monat', FullNameListFilter,)
+    list_filter = ('monatsabrechnung__jahr', 'monatsabrechnung__monat', FullNameListFilter,
+                   ('personal__standort', RelatedOnlyFieldListFilter),  # Filter für Standort hinzufügen
+                   )
 
     def get_full_name(self, obj):
         return f"{obj.personal.name} {obj.personal.nachname}"
@@ -378,8 +408,11 @@ class KindAdmin(admin.ModelAdmin):
     list_filter = ('personal__name',)
     form = KindForm
 
+
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Subquery, OuterRef, Max
+
+
 class AktuellerStatusFilter(admin.SimpleListFilter):
     title = _('aktueller Status')
     parameter_name = 'aktueller_status'
@@ -408,10 +441,12 @@ class AktuellerStatusFilter(admin.SimpleListFilter):
         if self.value() == 'abgemeldet':
             return queryset.filter(status='abgemeldet')
         return queryset
+
+
 @admin.register(Lohnprogramm)
 class LohnprogrammAdmin(admin.ModelAdmin):
     list_display = ['get_full_name', 'status_farbig', 'datum']
-    list_filter = (FullNameListFilter,AktuellerStatusFilter)
+    list_filter = (FullNameListFilter, AktuellerStatusFilter)
 
     def get_full_name(self, obj):
         return f"{obj.personal.name} {obj.personal.nachname}"

@@ -64,6 +64,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -158,3 +159,21 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = 'ugcarm@gmail.com'
 EMAIL_HOST_PASSWORD = 'wwtk zdmg ywuq cnmi'  # Verwenden Sie stattdessen App-Passwörter, wenn die 2-Faktor-Authentifizierung aktiviert ist
 DEFAULT_FROM_EMAIL = 'ugcarm@gmail.com'
+
+# settings.py
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}

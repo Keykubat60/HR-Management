@@ -1,6 +1,7 @@
 from django.db import models
 import os
 from django.db.models import UniqueConstraint
+from datetime import datetime
 
 
 # Unternehmen und Standort
@@ -34,6 +35,7 @@ class Personal(models.Model):
         ('Auto', 'Auto'),
         ('Fahrrad', 'Fahrrad'),
     ]
+    staatsbuergerschaft = models.CharField(max_length=100, null=True, blank=True, verbose_name='Staatsbürgerschaft')
     personalnummer = models.CharField(max_length=20, unique=True, null=True, blank=True)
     name = models.CharField(max_length=100)
     nachname = models.CharField(max_length=100, null=True, blank=True)
@@ -74,6 +76,26 @@ class Personal(models.Model):
     sign = models.BooleanField(default=False)
     uberaccount = models.CharField(max_length=100, null=True, blank=True)
 
+    # Neue Felder hinzufügen
+    strasse = models.CharField(max_length=255, null=True, blank=True)
+    postleitzahl = models.CharField(max_length=10, null=True, blank=True)
+    ort = models.CharField(max_length=100, null=True, blank=True)
+    familienstand = models.CharField(
+        max_length=20,
+        choices=[
+            ('ledig', 'Ledig'),
+            ('verheiratet', 'Verheiratet'),
+            ('geschieden', 'Geschieden'),
+        ],
+        null=True,
+        blank=True
+    )
+    gekuendigt = models.BooleanField(default=False,verbose_name='gekündigt')
+    lp_abgemeldet = models.BooleanField(default=False, verbose_name='LP abgemeldet')
+    lp_angemeldet = models.BooleanField(default=False, verbose_name='LP angemeldet')
+    krankenkassenname = models.CharField(max_length=255, null=True, blank=True)
+    kinderfreibetrag = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+
     def __str__(self):
         return self.name
 
@@ -105,7 +127,13 @@ class Dokument(models.Model):
     def __str__(self):
         return self.titel
 
+class Kind(models.Model):
+    personal = models.ForeignKey(Personal, related_name='kinder', on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    geburtsdatum = models.DateField()
 
+    def __str__(self):
+        return f"{self.name}"
 class Monatsabrechnung(models.Model):
     MONAT_CHOICES = [
         ('Januar', 'Januar'),
@@ -146,3 +174,21 @@ class Abrechnung(models.Model):
 
     def __str__(self):
         return f"Abrechnung für {self.personal.name} für {self.monatsabrechnung}"
+
+class Lohnprogramm(models.Model):
+    STATUS_CHOICES = [
+        ('angemeldet', 'angemeldet'),
+        ('abgemeldet', 'abgemeldet'),
+    ]
+    personal = models.ForeignKey(Personal, related_name='anmeldestatus', on_delete=models.CASCADE)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES)
+    datum = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.get_status_display()} am {self.datum.strftime('%d.%m.%Y')}"
+
+    class Meta:
+        # Optional: Definieren Sie eine Regel, dass nur der neueste Status als aktuell betrachtet wird
+        get_latest_by = 'datum'
+
+

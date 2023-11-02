@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Unternehmen, Personal, Dokument, Abrechnung, Monatsabrechnung
+from .models import Unternehmen, Personal, Dokument, Abrechnung, Monatsabrechnung, Kind, Lohnprogramm
 import csv
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
@@ -11,11 +11,20 @@ from datetime import datetime, timedelta
 from django import forms
 from django.forms import widgets
 from django.db import models
+from .forms import KindForm
+from .forms import KindFormSet
 
 
 class DokumentInline(admin.TabularInline):
     model = Dokument
     extra = 0  # Anzahl der leeren Formulare, die standardmäßig angezeigt werden
+
+
+class AnmeldeStatusInline(admin.TabularInline):
+    model = Lohnprogramm
+    extra = 1  # Wie viele leere Formulare angezeigt werden sollen
+    fields = ('status', 'datum')
+    readonly_fields = ('datum',)
 
 
 def export_xlsx(modeladmin, request, queryset):
@@ -58,21 +67,34 @@ def export_xlsx(modeladmin, request, queryset):
 export_xlsx.short_description = "Ausgewählte Objekte als Excel exportieren"
 
 
+class KindInline(admin.TabularInline):
+    model = Kind
+    formset = KindFormSet
+    extra = 0
+
+
 class PersonalAdmin(admin.ModelAdmin):
-    inlines = [DokumentInline]
+    inlines = [AnmeldeStatusInline, KindInline, DokumentInline]
     fieldsets = (
         ('Persönliche Informationen', {
-            'fields': ('name', 'nachname', 'personalnummer', 'geburtsdatum', 'telefonnummer', 'email', 'email_passwort')
+            'fields': ('name', 'nachname', 'personalnummer', 'familienstand', 'staatsbuergerschaft', 'geburtsdatum', 'telefonnummer', 'email',
+                       'email_passwort')
+        }),
+        ('Adresse', {
+            'fields': ('strasse', 'postleitzahl', 'ort')
         }),
         ('Arbeitsdetails', {
-            'fields': ('eintritt', 'austritt', 'status', ('vertragsart', 'sign'), 'standort')
+            'fields': (
+                'eintritt', 'austritt', 'status', ('vertragsart', 'sign'), 'standort')
         }),
         ('Finanzielle Informationen', {
-            'fields': ('steuernummer', 'steuerklasse', 'sozialversicherungsnummer', 'iban', 'finanziell_komplett')
+            'fields': ('steuernummer', 'steuerklasse', 'krankenkassenname',
+                       'kinderfreibetrag', 'sozialversicherungsnummer', 'iban', 'finanziell_komplett')
         }),
         ('Weitere Informationen', {
             'fields': (
                 'transportmittel', 'uberaccount', 'ubereats_passwort',
+                'gekuendigt', 'lp_abgemeldet', 'lp_angemeldet'
             )
         }),
     )
@@ -348,6 +370,65 @@ class AbrechnungAdmin(admin.ModelAdmin):
             response.context_data.update(extra_context)
 
         return response
+
+
+@admin.register(Kind)
+class KindAdmin(admin.ModelAdmin):
+    list_display = ['name', 'geburtsdatum', 'personal']
+    list_filter = ('personal__name',)
+    form = KindForm
+
+from django.utils.translation import gettext_lazy as _
+from django.db.models import Subquery, OuterRef, Max
+class AktuellerStatusFilter(admin.SimpleListFilter):
+    title = _('aktueller Status')
+    parameter_name = 'aktueller_status'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('angemeldet', _('Angemeldet')),
+            ('abgemeldet', _('Abgemeldet')),
+        )
+
+    def queryset(self, request, queryset):
+        # Subquery, um das neueste Datum und die neueste Uhrzeit für jedes Personal zu finden
+        neuester_status_subquery = Lohnprogramm.objects.filter(
+            personal=OuterRef('personal')
+        ).values('personal').annotate(
+            neuestes_datum=Max('datum')  # Stellen Sie sicher, dass 'datum' auch die Uhrzeit enthält
+        ).values('id')  # Wir wählen die ID des neuesten Eintrags
+
+        # Hauptquery, um den letzten Status basierend auf der ID des neuesten Eintrags zu filtern
+        queryset = queryset.filter(
+            id__in=neuester_status_subquery
+        )
+
+        if self.value() == 'angemeldet':
+            return queryset.filter(status='angemeldet')
+        if self.value() == 'abgemeldet':
+            return queryset.filter(status='abgemeldet')
+        return queryset
+@admin.register(Lohnprogramm)
+class LohnprogrammAdmin(admin.ModelAdmin):
+    list_display = ['get_full_name', 'status_farbig', 'datum']
+    list_filter = (FullNameListFilter,AktuellerStatusFilter)
+
+    def get_full_name(self, obj):
+        return f"{obj.personal.name} {obj.personal.nachname}"
+
+    get_full_name.admin_order_field = 'personal__name'  # Erlaubt Sortierung
+    get_full_name.short_description = 'Vollständiger Name'
+
+    def status_farbig(self, obj):
+        # Setzen Sie die Farbe basierend auf dem Status
+        color = 'green' if obj.status == 'angemeldet' else 'red'
+        return format_html(
+            '<span style="color: {};">{}</span>',
+            color,
+            obj.get_status_display()
+        )
+
+    status_farbig.short_description = 'Status'
 
 
 admin.site.register(Monatsabrechnung, MonatsabrechnungAdmin)

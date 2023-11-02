@@ -34,10 +34,22 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # settings.py
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'Ihre-Domain.de']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.178.71', '192.168.16.3']
+
+# Datumsformate
+
+# settings.py
+
+LANGUAGE_CODE = 'de-de'
+
+# settings.py
+
+DATE_FORMAT = 'd.m.Y'
+DATETIME_FORMAT = 'd.m.Y H:i'
+DATE_INPUT_FORMATS = ['%d.%m.%Y']
+USE_L10N = False  # Dies könnte erforderlich sein, um die lokalisierung zu deaktivieren
 
 
-# Application definition
 
 INSTALLED_APPS = [
     'hrm_app',
@@ -137,3 +149,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'ugcarm@gmail.com'
+EMAIL_HOST_PASSWORD = 'wwtk zdmg ywuq cnmi'  # Verwenden Sie stattdessen App-Passwörter, wenn die 2-Faktor-Authentifizierung aktiviert ist
+DEFAULT_FROM_EMAIL = 'ugcarm@gmail.com'

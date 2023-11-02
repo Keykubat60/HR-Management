@@ -30,3 +30,5 @@ def get_persons_not_in_month(request, month_id):
     persons_without_abrechnung = Personal.objects.exclude(id__in=persons_with_abrechnung).filter(status='aktiv').values(
         'name', 'nachname', 'personalnummer')
     return JsonResponse({'persons': list(persons_without_abrechnung)})
+
+

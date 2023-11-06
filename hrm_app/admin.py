@@ -78,7 +78,6 @@ class KindInline(admin.TabularInline):
 class PersonalAdmin(admin.ModelAdmin):
     inlines = [AnmeldeStatusInline, KindInline, DokumentInline]
 
-
     fieldsets = (
         ('Persönliche Informationen', {
             'fields': ('name', 'nachname', 'personalnummer', 'familienstand', 'staatsbuergerschaft', 'geburtsdatum',
@@ -90,20 +89,16 @@ class PersonalAdmin(admin.ModelAdmin):
         }),
         ('Arbeitsdetails', {
             'fields': (
-                'eintritt', 'austritt', 'status', ('vertragsart', 'sign'), 'standort')
+                'eintritt', ('austritt', 'gekuendigt'), 'status', ('vertragsart', 'sign'), 'standort',
+                'transportmittel', 'uberaccount', 'ubereats_passwort')
         }),
         ('Finanzielle Informationen', {
             'fields': ('steuernummer', 'steuerklasse', 'krankenkassenname',
                        'kinderfreibetrag', 'sozialversicherungsnummer', 'iban', 'finanziell_komplett')
         }),
-        ('Weitere Informationen', {
-            'fields': (
-                'transportmittel', 'uberaccount', 'ubereats_passwort',
-                'gekuendigt', 'lp_abgemeldet', 'lp_angemeldet'
-            )
-        }),
     )
-    list_filter = ('gekuendigt', 'status', 'standort__projekt', 'standort__standort', 'finanziell_komplett', 'transportmittel')
+    list_filter = (
+        'gekuendigt', 'status', 'standort__projekt', 'standort__standort', 'finanziell_komplett', 'transportmittel')
 
     actions = [export_xlsx]
     list_display = (
@@ -117,6 +112,7 @@ class PersonalAdmin(admin.ModelAdmin):
         if obj.gekuendigt:
             return format_html('<span style="color: red;">{}</span>', obj.name)
         return obj.name
+
     name_colored.short_description = 'Name'  # Setzt die Spaltenüberschrift
     name_colored.admin_order_field = 'name'  # Erlaubt das Sortieren nach diesem Feld
 

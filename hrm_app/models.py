@@ -93,8 +93,6 @@ class Personal(models.Model):
         blank=True
     )
     gekuendigt = models.BooleanField(default=False,verbose_name='gekündigt')
-    lp_abgemeldet = models.BooleanField(default=False, verbose_name='LP abgemeldet')
-    lp_angemeldet = models.BooleanField(default=False, verbose_name='LP angemeldet')
     krankenkassenname = models.CharField(max_length=255, null=True, blank=True)
     kinderfreibetrag = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
 

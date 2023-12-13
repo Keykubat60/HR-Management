@@ -34,7 +34,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # settings.py
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.178.71', '192.168.16.3','hrm']
+ALLOWED_HOSTS = ['*']
 
 # Datumsformate
 
